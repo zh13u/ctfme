@@ -77,3 +77,87 @@ func LoginUser(c *fiber.Ctx) error {
 	}
 	return c.JSON(fiber.Map{"token": tokenString})
 }
+
+func AdminGetUser(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(uint)
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		return c.Status(401).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	if !user.IsAdmin {
+		return c.Status(403).JSON(fiber.Map{"error": "Admin only"})
+	}
+
+	var users []models.User
+	if err := database.DB.Find(&users).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Could not fetch users"})
+	}
+
+	return c.JSON(users)
+}
+
+func AdminGetUserDetail(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(uint)
+	var admin models.User
+	if err := database.DB.First(&admin, userID).Error; err != nil || !admin.IsAdmin {
+		return c.Status(403).JSON(fiber.Map{"error": "Admin only!"})
+	}
+	id := c.Params("id")
+	var user models.User
+	if err := database.DB.First(&user, id).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "User not found!"})
+	}
+
+	return c.JSON(user)
+}
+
+func AdminUpdateUser(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(uint)
+	var admin models.User
+	if err := database.DB.First(&admin, userID).Error; err != nil || !admin.IsAdmin {
+		return c.Status(403).JSON(fiber.Map{"error": "Admin only!"})
+	}
+
+	id := c.Params("id")
+	var user models.User
+	if err := database.DB.First(&user, id).Error; err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "User not found!"})
+	}
+
+	type UpdateUserRequest struct {
+		Email		string 	`json:"email"`
+		IsAdmin		bool 	`json:"is_admin"`
+		TeamID		*uint 	`json:"team_id"`
+	}
+
+	var req UpdateUserRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	user.Email = req.Email
+	user.IsAdmin = req.IsAdmin
+	user.TeamID = req.TeamID
+
+	if err := database.DB.Save(&user).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Could not update user"})
+	}
+
+	return c.JSON(fiber.Map{"message": "User updated!", "user": user})
+}
+
+func AdminDeleteUser(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(uint)
+	var admin models.User
+	if err := database.DB.First(&admin, userID).Error; err != nil || !admin.IsAdmin {
+		return c.Status(403).JSON(fiber.Map{"error": "Admin only!"})
+	}
+
+	id := c.Params("id")
+	if err := database.DB.Unscoped().Delete(&models.User{}, id).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Could not delete user"})
+	}
+
+	return c.JSON(fiber.Map{"message": "User deleted!"})
+}

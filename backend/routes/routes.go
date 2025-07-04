@@ -12,14 +12,15 @@ func SetupRoutes(app *fiber.App) {
 	api.Post("/login", controllers.LoginUser)
 	api.Get("/challenges", controllers.GetChallenges)
 
-	// Route cho admin tạo challenge
+	// Route for admin to manage challenges
 	api.Post("/admin/challenge", middleware.JWTProtected(), controllers.CreateChallenge)
-
-	// Route cho admin quản lý challenge
 	api.Get("/admin/challenge", middleware.JWTProtected(), controllers.AdminGetChallenges)
 	api.Put("/admin/challenge/:id", middleware.JWTProtected(), controllers.UpdateChallenge)
 	api.Delete("/admin/challenge/:id", middleware.JWTProtected(), controllers.DeleteChallenge)
 
-	// need login
-	
+	// route for admin to manage users
+	api.Get("/admin/users", middleware.JWTProtected(), controllers.AdminGetUser)
+	api.Get("/admin/user/:id", middleware.JWTProtected(), controllers.AdminGetUserDetail)
+	api.Put("/admin/user/:id", middleware.JWTProtected(), controllers.AdminUpdateUser)
+	api.Delete("/admin/user/:id", middleware.JWTProtected(), controllers.AdminDeleteUser)
 }
