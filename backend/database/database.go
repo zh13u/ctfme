@@ -1,12 +1,13 @@
 package database
 
 import (
+	"ctfme/models"
 	"log"
 	"os"
-	"gorm.io/gorm"
+
 	"github.com/joho/godotenv"
-	"ctfme/models"
 	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
@@ -18,7 +19,7 @@ func ConnectDB() {
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)
 	}
-	DB =db
+	DB = db
 
-	db.AutoMigrate(&models.Team{}, &models.User{}, &models.Challenge{}, &models.Submission{})
+	db.AutoMigrate(&models.Team{}, &models.User{}, &models.Challenge{}, &models.Submission{}, &models.Setup{})
 }

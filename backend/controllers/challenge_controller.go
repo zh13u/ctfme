@@ -122,7 +122,73 @@ func AdminGetChallenges(c *fiber.Ctx) error {
 	}
 	var challenges []models.Challenge
 	database.DB.Preload("SolvedBy").Find(&challenges)
-	return c.JSON(challenges)
+
+	// Clean response
+	type UserResponse struct {
+		ID       uint   `json:"id"`
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		TeamID   *uint  `json:"team_id"`
+	}
+	type ChallengeResponse struct {
+		ID           uint           `json:"id"`
+		CreatedAt    string         `json:"created_at"`
+		UpdatedAt    string         `json:"updated_at"`
+		DeletedAt    *string        `json:"deleted_at"`
+		Title        string         `json:"title"`
+		Description  string         `json:"description"`
+		Category     string         `json:"category"`
+		Points       int            `json:"points"`
+		Flag         string         `json:"flag"`
+		FileURL      string         `json:"file_url"`
+		Visible      bool           `json:"visible"`
+		SolvedBy     []UserResponse `json:"solved_by"`
+		DynamicScore bool           `json:"dynamic_score"`
+		MinScore     int            `json:"min_score"`
+		Decay        int            `json:"decay"`
+	}
+
+	// Get system configuration
+	var setup models.Setup
+	if err := database.DB.First(&setup).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Could not fetch system configuration"})
+	}
+
+	var response []ChallengeResponse
+	for _, ch := range challenges {
+		var solvedBy []UserResponse
+		for _, u := range ch.SolvedBy {
+			solvedBy = append(solvedBy, UserResponse{
+				ID:       u.ID,
+				Username: u.Username,
+				Email:    u.Email,
+				TeamID:   u.TeamID,
+			})
+		}
+		var deletedAt *string
+		if ch.DeletedAt.Valid {
+			dt := ch.DeletedAt.Time.Format("2006-01-02T15:04:05Z07:00")
+			deletedAt = &dt
+		}
+		response = append(response, ChallengeResponse{
+			ID:           ch.ID,
+			CreatedAt:    ch.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:    ch.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			DeletedAt:    deletedAt,
+			Title:        ch.Title,
+			Description:  ch.Description,
+			Category:     ch.Category,
+			Points:       ch.Points,
+			Flag:         ch.Flag,
+			FileURL:      ch.FileURL,
+			Visible:      ch.Visible,
+			SolvedBy:     solvedBy,
+			DynamicScore: setup.DynamicScoreEnabled,
+			MinScore:     setup.DynamicScoreMin,
+			Decay:        setup.DynamicScoreDecay,
+		})
+	}
+	return c.JSON(response)
 }
 
 // API for admin to update challenge
@@ -211,10 +277,9 @@ func SubmitFlag(c *fiber.Ctx) error {
 		return c.Status(401).JSON(fiber.Map{"error": "User not found"})
 	}
 
-	// Check if user is in a team when in team mode
-	teamWarning := ""
+	// Chặn submit nếu chưa vào team ở team mode
 	if config.TeamMode && user.TeamID == nil {
-		teamWarning = "Warning: You are not in a team. Consider joining a team for better experience in team mode."
+		return c.Status(400).JSON(fiber.Map{"error": "Bạn cần vào team mới được submit!"})
 	}
 
 	type SubmitInput struct {
@@ -245,12 +310,6 @@ func SubmitFlag(c *fiber.Ctx) error {
 				WHERE s.challenge_id = ? AND s.is_correct = true AND u.team_id = ?
 			`, challenge.ID, user.TeamID).Scan(&debugSolveCount)
 			existingSolve = debugSolveCount > 0
-		} else {
-			// In team mode without team, check if user already solved
-			database.DB.Model(&models.Submission{}).
-				Where("challenge_id = ? AND user_id = ? AND is_correct = true", challenge.ID, userID).
-				Count(&debugSolveCount)
-			existingSolve = debugSolveCount > 0
 		}
 	} else {
 		// In user mode, check if user already solved
@@ -269,22 +328,13 @@ func SubmitFlag(c *fiber.Ctx) error {
 	println("DebugSolveCount:", debugSolveCount)
 	println("========================")
 
-	// save submission
-	sub := models.Submission{
-		UserID:      userID,
-		TeamID:      user.TeamID, // Include team ID in submission
-		ChallengeID: challenge.ID,
-		Flag:        input.Flag,
-		IsCorrect:   isCorrect,
+	if !isCorrect {
+		return c.JSON(fiber.Map{"result": "Incorrect!"})
 	}
-	database.DB.Create(&sub)
 
+	// Calculate points first (before saving submission)
+	var pointsEarned int
 	if isCorrect {
-		if !existingSolve {
-			// Only add to SolvedBy if this is the first solve for user/team
-			database.DB.Model(&challenge).Association("SolvedBy").Append(&user)
-		}
-		// calculate points
 		var solveCount int64
 		if config.TeamMode {
 			database.DB.Raw(`
@@ -298,20 +348,33 @@ func SubmitFlag(c *fiber.Ctx) error {
 				Where("challenge_id = ? AND is_correct = true", challenge.ID).
 				Count(&solveCount)
 		}
-		points := calculateDynamicPoints(challenge, solveCount)
-		response := fiber.Map{"result": "Correct!", "points": points}
-		if teamWarning != "" {
-			response["warning"] = teamWarning
-		}
-		if existingSolve {
-			response["message"] = "You already solved this challenge before"
-		}
-		return c.JSON(response)
+		pointsEarned = calculateDynamicPoints(challenge, solveCount)
+		println("=== SubmitFlag Points Calculation ===")
+		println("Challenge ID:", challenge.ID)
+		println("Base Points:", challenge.Points)
+		println("Solve Count:", solveCount)
+		println("Points Earned:", pointsEarned)
+		println("=====================================")
 	}
 
-	response := fiber.Map{"result": "Incorrect!"}
-	if teamWarning != "" {
-		response["warning"] = teamWarning
+	// save submission with points earned (chỉ khi hợp lệ)
+	sub := models.Submission{
+		UserID:       userID,
+		TeamID:       user.TeamID, // Include team ID in submission
+		ChallengeID:  challenge.ID,
+		Flag:         input.Flag,
+		IsCorrect:    isCorrect,
+		PointsEarned: pointsEarned,
+	}
+	database.DB.Create(&sub)
+
+	if !existingSolve {
+		// Only add to SolvedBy if this is the first solve for user/team
+		database.DB.Model(&challenge).Association("SolvedBy").Append(&user)
+	}
+	response := fiber.Map{"result": "Correct!", "points": pointsEarned}
+	if existingSolve {
+		response["message"] = "You already solved this challenge before"
 	}
 	return c.JSON(response)
 }

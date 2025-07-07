@@ -263,6 +263,12 @@ func GetProfile(c *fiber.Ctx) error {
 }
 
 func GetScoreboard(c *fiber.Ctx) error {
+	println("=== GetScoreboard Debug ===")
+	println("TeamMode:", config.TeamMode)
+	println("DynamicScoreEnabled:", config.DynamicScoreEnabled)
+	println("DynamicScoreDecay:", config.DynamicScoreDecay)
+	println("DynamicScoreMin:", config.DynamicScoreMin)
+
 	if config.TeamMode {
 		type TeamScore struct {
 			TeamName string
@@ -276,31 +282,28 @@ func GetScoreboard(c *fiber.Ctx) error {
 
 		for _, team := range teams {
 			totalPoints := 0
-			challengeSolves := make(map[uint]int) // challenge_id -> solve_count
+			println("Processing team:", team.Name)
 
-			// Count solves per challenge for this team
+			// Calculate points from submissions (using points earned at submission time)
+			challengePoints := make(map[uint]int) // challenge_id -> points earned
 			for _, user := range team.Users {
 				for _, submission := range user.Submissions {
-					challengeSolves[submission.ChallengeID]++
-				}
-			}
-
-			// Calculate points for each solved challenge
-			for challengeID, solveCount := range challengeSolves {
-				var challenge models.Challenge
-				if err := database.DB.First(&challenge, challengeID).Error; err == nil {
-					points := challenge.Points
-					if config.DynamicScoreEnabled && solveCount > 0 {
-						if config.DynamicScoreDecay > 0 {
-							points = challenge.Points - (solveCount-1)*config.DynamicScoreDecay
-							if points < config.DynamicScoreMin {
-								points = config.DynamicScoreMin
-							}
+					if submission.IsCorrect && submission.PointsEarned > 0 {
+						// Use the highest points earned for this challenge by this team
+						if submission.PointsEarned > challengePoints[submission.ChallengeID] {
+							challengePoints[submission.ChallengeID] = submission.PointsEarned
 						}
 					}
-					totalPoints += points
 				}
 			}
+			println("Team solved challenges count:", len(challengePoints))
+
+			// Sum up points earned for each challenge
+			for challengeID, pointsEarned := range challengePoints {
+				println("Challenge ID:", challengeID, "Points Earned:", pointsEarned)
+				totalPoints += pointsEarned
+			}
+			println("Team total points:", totalPoints)
 
 			scores = append(scores, TeamScore{
 				TeamName: team.Name,
@@ -316,6 +319,7 @@ func GetScoreboard(c *fiber.Ctx) error {
 				}
 			}
 		}
+		println("=============================")
 
 		return c.JSON(scores)
 	} else {
@@ -331,28 +335,21 @@ func GetScoreboard(c *fiber.Ctx) error {
 
 		for _, user := range users {
 			totalPoints := 0
-			challengeSolves := make(map[uint]int) // challenge_id -> solve_count
+			challengePoints := make(map[uint]int) // challenge_id -> points earned
 
-			// Count solves per challenge for this user
+			// Calculate points from submissions (using points earned at submission time)
 			for _, submission := range user.Submissions {
-				challengeSolves[submission.ChallengeID]++
+				if submission.IsCorrect && submission.PointsEarned > 0 {
+					// Use the highest points earned for this challenge by this user
+					if submission.PointsEarned > challengePoints[submission.ChallengeID] {
+						challengePoints[submission.ChallengeID] = submission.PointsEarned
+					}
+				}
 			}
 
-			// Calculate points for each solved challenge
-			for challengeID, solveCount := range challengeSolves {
-				var challenge models.Challenge
-				if err := database.DB.First(&challenge, challengeID).Error; err == nil {
-					points := challenge.Points
-					if config.DynamicScoreEnabled && solveCount > 0 {
-						if config.DynamicScoreDecay > 0 {
-							points = challenge.Points - (solveCount-1)*config.DynamicScoreDecay
-							if points < config.DynamicScoreMin {
-								points = config.DynamicScoreMin
-							}
-						}
-					}
-					totalPoints += points
-				}
+			// Sum up points earned for each challenge
+			for _, pointsEarned := range challengePoints {
+				totalPoints += pointsEarned
 			}
 
 			scores = append(scores, UserScore{

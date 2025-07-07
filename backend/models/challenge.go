@@ -4,7 +4,7 @@ import "gorm.io/gorm"
 
 type Challenge struct {
 	gorm.Model
-	
+
 	Title       string `gorm:"not null"`
 	Description string `gorm:"type:text"`
 	Category    string `gorm:"not null"`
@@ -13,7 +13,4 @@ type Challenge struct {
 	FileURL     string
 	Visible     bool   `gorm:"default:true"`
 	SolvedBy    []User `gorm:"many2many:challenge_solvers;"`
-	DynamicScore bool  `gorm:"default:false"`
-	MinScore     int   `gorm:"default:0"`
-	Decay        int   `gorm:"default:0"`
 }

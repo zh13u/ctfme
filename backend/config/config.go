@@ -1,8 +1,9 @@
 package config
 
 import (
-	"os"
-	"strconv"
+	"ctfme/database"
+	"ctfme/models"
+	"log"
 )
 
 var TeamMode bool
@@ -10,32 +11,61 @@ var DynamicScoreEnabled bool
 var DynamicScoreDecay int
 var DynamicScoreMin int
 
-// InitConfig initializes configuration after .env is loaded
+// InitConfig initializes configuration from database
 func InitConfig() {
-	TeamMode = os.Getenv("CTF_MODE") == "team"
-	DynamicScoreEnabled = os.Getenv("DYNAMIC_SCORE_ENABLED") == "true"
-	DynamicScoreDecay = getEnvAsInt("DYNAMIC_SCORE_DECAY", 10)
-	DynamicScoreMin = getEnvAsInt("DYNAMIC_SCORE_MIN", 50)
+	var config models.Setup
+	if err := database.DB.First(&config).Error; err != nil {
+		// If no config exists, create default config
+		log.Println("No config found in database, creating default config...")
+		defaultConfig := models.Setup{
+			CTFMode:             "user",
+			DynamicScoreEnabled: false,
+			DynamicScoreDecay:   10,
+			DynamicScoreMin:     50,
+		}
+		if err := database.DB.Create(&defaultConfig).Error; err != nil {
+			log.Fatal("Failed to create default config: ", err)
+		}
+		config = defaultConfig
+	}
+
+	// Load config from database
+	TeamMode = config.CTFMode == "team"
+	DynamicScoreEnabled = config.DynamicScoreEnabled
+	DynamicScoreDecay = config.DynamicScoreDecay
+	DynamicScoreMin = config.DynamicScoreMin
 }
 
-// Helper function to get environment variable as int with default value
-func getEnvAsInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
+// ReloadConfig reloads configuration from database
+func ReloadConfig() error {
+	var config models.Setup
+	if err := database.DB.First(&config).Error; err != nil {
+		return err
 	}
-	return defaultValue
+
+	TeamMode = config.CTFMode == "team"
+	DynamicScoreEnabled = config.DynamicScoreEnabled
+	DynamicScoreDecay = config.DynamicScoreDecay
+	DynamicScoreMin = config.DynamicScoreMin
+
+	return nil
 }
 
 // Debug function to print current config
 func PrintConfig() {
 	println("=== CTF Configuration ===")
-	println("CTF_MODE:", os.Getenv("CTF_MODE"))
+	println("CTF_MODE:", getCTFModeString())
 	println("TeamMode:", TeamMode)
-	println("DYNAMIC_SCORE_ENABLED:", os.Getenv("DYNAMIC_SCORE_ENABLED"))
 	println("DynamicScoreEnabled:", DynamicScoreEnabled)
 	println("DynamicScoreDecay:", DynamicScoreDecay)
 	println("DynamicScoreMin:", DynamicScoreMin)
 	println("========================")
+}
+
+// Helper function to get CTF mode as string
+func getCTFModeString() string {
+	if TeamMode {
+		return "team"
+	}
+	return "user"
 }

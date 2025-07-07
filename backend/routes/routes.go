@@ -13,6 +13,10 @@ func SetupRoutes(app *fiber.App) {
 	api.Post("/login", controllers.LoginUser)
 	api.Get("/challenges", middleware.JWTProtected(), controllers.GetChallenges)
 
+	// setup
+	api.Get("/admin/setup", middleware.JWTProtected(), controllers.GetSetup)
+	api.Put("/admin/setup", middleware.JWTProtected(), controllers.UpdateSetup)
+
 	// Route for admin to manage challenges
 	api.Post("/admin/challenge", middleware.JWTProtected(), controllers.CreateChallenge)
 	api.Get("/admin/challenge", middleware.JWTProtected(), controllers.AdminGetChallenges)
