@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CTFme - CTF Platform</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="logo">CTFme</div>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#rules">Rules</a></li>
+      <li><a href="#challenges">Challenges</a></li>
+      <li><a href="#scoreboard">Scoreboard</a></li>
+      <li><a href="#teams">Teams</a></li>
+      <li class="auth-item login-btn" id="loginBtn"><a href="#" onclick="openModal('login')">Login</a></li>
+      <li class="auth-item register-btn" id="registerBtn"><a href="#" onclick="openModal('register')">Register</a></li>
+      <li class="profile-item" id="profileBtn" style="display:none"><a href="#profile">Profile</a></li>
+      <li class="profile-item" id="settingBtn" style="display:none"><a href="#setting">Settings</a></li>
+      <li class="profile-item" id="logoutBtn" style="display:none"><a href="#" onclick="logout()">Logout</a></li>
+    </ul>
+    <button id="modeToggle" class="mode-toggle" title="Toggle dark/light mode">🌙</button>
+  </nav>
+
+  <main>
+    <section id="rules" class="section">
+      <h2 id="rules-title">Rules</h2>
+      <p id="rules-desc">CTF rules, regulations and instructions...</p>
+    </section>
+    <section id="challenges" class="section">
+      <h2 id="challenges-title">Challenges</h2>
+      <p id="challenges-desc">Challenge list will be displayed here.</p>
+    </section>
+    <section id="scoreboard" class="section">
+      <h2 id="scoreboard-title">Scoreboard</h2>
+      <p id="scoreboard-desc">Ranking board for teams/players.</p>
+    </section>
+    <section id="teams" class="section">
+      <h2 id="teams-title">Teams</h2>
+      <p id="teams-desc">Information about participating teams.</p>
+    </section>
+  </main>
+
+  <!-- Login/Register Modal -->
+  <div id="modal" class="modal" style="display:none">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <div id="modal-login" style="display:none">
+        <h3 id="login-title">Login</h3>
+        <input type="text" id="login-username" placeholder="Username">
+        <input type="password" id="login-password" placeholder="Password">
+        <button onclick="login()" id="login-btn">Login</button>
+      </div>
+      <div id="modal-register" style="display:none">
+        <h3 id="register-title">Register</h3>
+        <input type="text" id="register-username" placeholder="Username">
+        <input type="password" id="register-password" placeholder="Password">
+        <button onclick="register()" id="register-btn">Register</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © <span id="year"></span> CTFme. All rights reserved.
+  </footer>
+
+  <!-- Google Translate Widget ở góc dưới bên phải -->
+  <div id="google_translate_element" style="position:fixed;bottom:10px;right:10px;z-index:9999;"></div>
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,vi,fr,ja,zh,ko,ru,es,de,th,pt,it',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+      }, 'google_translate_element');
+    }
+  </script>
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+  <script src="app.js"></script>
+</body>
+</html> 

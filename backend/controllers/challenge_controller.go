@@ -24,53 +24,33 @@ func calculateDynamicPoints(challenge models.Challenge, solveCount int64) int {
 
 func GetChallenges(c *fiber.Ctx) error {
 	var challenges []models.Challenge
-
-	// get all challenge visible to user
-	if err := database.DB.Where("visible = ?", true).Find(&challenges).Error; err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Could not fetch challenges"})
+	if err := database.DB.Preload("SolvedBy").Find(&challenges).Error; err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Không thể lấy danh sách thử thách"})
 	}
-
-	// hide flag
-	type ChallengeResponse struct {
+	// Ẩn trường flag trước khi trả về
+	type ChallengePublic struct {
 		ID          uint   `json:"id"`
 		Title       string `json:"title"`
 		Description string `json:"description"`
 		Category    string `json:"category"`
 		Points      int    `json:"points"`
-		FileURL     string `json:"file_url"`
-		SolveCount  int64  `json:"solve_count"`
+		FileURL     string `json:"fileURL"`
+		Visible     bool   `json:"visible"`
+		// Không có trường flag
 	}
-
-	var response []ChallengeResponse
-	for _, challenge := range challenges {
-		var solveCount int64
-		if config.TeamMode {
-			database.DB.Raw(`
-				SELECT COUNT(DISTINCT u.team_id)
-				FROM submissions s
-				JOIN users u ON s.user_id = u.id
-				WHERE s.challenge_id = ? AND s.is_correct = true AND u.team_id IS NOT NULL
-			`, challenge.ID).Scan(&solveCount)
-		} else {
-			database.DB.Model(&models.Submission{}).
-				Where("challenge_id = ? AND is_correct = true", challenge.ID).
-				Distinct("user_id").Count(&solveCount)
-		}
-		// Calculate dynamic points
-		displayPoints := calculateDynamicPoints(challenge, solveCount)
-
-		response = append(response, ChallengeResponse{
-			ID:          challenge.ID,
-			Title:       challenge.Title,
-			Description: challenge.Description,
-			Category:    challenge.Category,
-			Points:      displayPoints,
-			FileURL:     challenge.FileURL,
-			SolveCount:  solveCount,
+	var publicChallenges []ChallengePublic
+	for _, ch := range challenges {
+		publicChallenges = append(publicChallenges, ChallengePublic{
+			ID:          ch.ID,
+			Title:       ch.Title,
+			Description: ch.Description,
+			Category:    ch.Category,
+			Points:      ch.Points,
+			FileURL:     ch.FileURL,
+			Visible:     ch.Visible,
 		})
 	}
-
-	return c.JSON(response)
+	return c.JSON(publicChallenges)
 }
 
 // API for admin to create new challenge

@@ -11,7 +11,7 @@ func SetupRoutes(app *fiber.App) {
 	api := app.Group("/api")
 	api.Post("/register", controllers.RegisterUser)
 	api.Post("/login", controllers.LoginUser)
-	api.Get("/challenges", middleware.JWTProtected(), controllers.GetChallenges)
+	api.Get("/challenges", controllers.GetChallenges)
 
 	// setup
 	api.Get("/admin/setup", middleware.JWTProtected(), controllers.GetSetup)

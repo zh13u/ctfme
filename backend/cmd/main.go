@@ -6,8 +6,8 @@ import (
 	"ctfme/database/migrations"
 	"ctfme/routes"
 	"log"
-
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 )
 
@@ -21,6 +21,14 @@ func main() {
 	config.InitConfig()  // Initialize configuration after .env is loaded
 	config.PrintConfig() // Print configuration for debugging
 	app := fiber.New()
+
+	// Thêm middleware CORS ngay sau khi khởi tạo app
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+	}))
+
 	routes.SetupRoutes(app)
 	log.Fatal(app.Listen(":3000"))
+
 }
