@@ -281,6 +281,31 @@ func SubmitFlag(c *fiber.Ctx) error {
 	if err := database.DB.First(&challenge, input.ChallengeID).Error; err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "Challenge not found"})
 	}
+
+	// Kiểm tra đã từng đúng chưa
+	var solvedBefore bool
+	if config.TeamMode {
+		if user.TeamID != nil {
+			var count int64
+			database.DB.Raw(`
+				SELECT COUNT(*)
+				FROM submissions s
+				JOIN users u ON s.user_id = u.id
+				WHERE s.challenge_id = ? AND s.is_correct = true AND u.team_id = ?
+			`, challenge.ID, user.TeamID).Scan(&count)
+			solvedBefore = count > 0
+		}
+	} else {
+		var count int64
+		database.DB.Model(&models.Submission{}).
+			Where("challenge_id = ? AND user_id = ? AND is_correct = true", challenge.ID, userID).
+			Count(&count)
+		solvedBefore = count > 0
+	}
+	if solvedBefore {
+		return c.JSON(fiber.Map{"result": "Bạn đã giải rồi!"})
+	}
+
 	isCorrect := input.Flag == challenge.Flag
 
 	// Check if user/team already solved this challenge
@@ -342,6 +367,9 @@ func SubmitFlag(c *fiber.Ctx) error {
 		println("Solve Count:", solveCount)
 		println("Points Earned:", pointsEarned)
 		println("=====================================")
+		// Cập nhật lại điểm động cho challenge
+		challenge.CurrentPoints = pointsEarned
+		database.DB.Save(&challenge)
 	}
 
 	// save submission with points earned (chỉ khi hợp lệ)
