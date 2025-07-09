@@ -6,6 +6,7 @@ import (
 	"ctfme/database/migrations"
 	"ctfme/routes"
 	"log"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
@@ -17,6 +18,11 @@ func main() {
 
 	// Run migration to remove config fields from challenges table
 	migrations.RemoveChallengeConfigFields()
+
+	// Thêm migration thêm trường difficulty
+	migrations.AddDifficultyToChallenge()
+
+	migrations.AddCurrentPointsToChallenge()
 
 	config.InitConfig()  // Initialize configuration after .env is loaded
 	config.PrintConfig() // Print configuration for debugging

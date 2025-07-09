@@ -24,7 +24,7 @@ func calculateDynamicPoints(challenge models.Challenge, solveCount int64) int {
 
 func GetChallenges(c *fiber.Ctx) error {
 	var challenges []models.Challenge
-	if err := database.DB.Preload("SolvedBy").Find(&challenges).Error; err != nil {
+	if err := database.DB.Preload("SolvedBy").Where("visible = ?", true).Find(&challenges).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Không thể lấy danh sách thử thách"})
 	}
 	// Ẩn trường flag trước khi trả về
@@ -36,18 +36,22 @@ func GetChallenges(c *fiber.Ctx) error {
 		Points      int    `json:"points"`
 		FileURL     string `json:"fileURL"`
 		Visible     bool   `json:"visible"`
+		Difficulty  string `json:"difficulty"`
 		// Không có trường flag
 	}
 	var publicChallenges []ChallengePublic
 	for _, ch := range challenges {
+		// solveCount := int64(len(ch.SolvedBy))
+		// currentPoints := calculateDynamicPoints(ch, solveCount)
 		publicChallenges = append(publicChallenges, ChallengePublic{
 			ID:          ch.ID,
 			Title:       ch.Title,
 			Description: ch.Description,
 			Category:    ch.Category,
-			Points:      ch.Points,
+			Points:      ch.CurrentPoints,
 			FileURL:     ch.FileURL,
 			Visible:     ch.Visible,
+			Difficulty:  ch.Difficulty,
 		})
 	}
 	return c.JSON(publicChallenges)
@@ -73,19 +77,22 @@ func CreateChallenge(c *fiber.Ctx) error {
 		Flag        string `json:"flag"`
 		FileURL     string `json:"file_url"`
 		Visible     bool   `json:"visible"`
+		Difficulty  string `json:"difficulty"`
 	}
 	var input ChallengeInput
 	if err := c.BodyParser(&input); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid input"})
 	}
 	challenge := models.Challenge{
-		Title:       input.Title,
-		Description: input.Description,
-		Category:    input.Category,
-		Points:      input.Points,
-		Flag:        input.Flag,
-		FileURL:     input.FileURL,
-		Visible:     input.Visible,
+		Title:         input.Title,
+		Description:   input.Description,
+		Category:      input.Category,
+		Points:        input.Points,
+		Flag:          input.Flag,
+		FileURL:       input.FileURL,
+		Visible:       input.Visible,
+		Difficulty:    input.Difficulty,
+		CurrentPoints: input.Points,
 	}
 	if err := database.DB.Create(&challenge).Error; err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": "Could not create challenge"})

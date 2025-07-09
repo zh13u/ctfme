@@ -1,3 +1,25 @@
+// Thêm lại biến translations để fix lỗi và hỗ trợ đa ngôn ngữ cho giao diện
+const translations = {
+  en: {
+    rules: 'Rules',
+    rulesDesc: 'CTF rules, regulations and instructions...',
+    challenges: 'Challenges',
+    challengesDesc: 'Challenge list will be displayed here.',
+    scoreboard: 'Scoreboard',
+    scoreboardDesc: 'Ranking board for teams/players.',
+    teams: 'Teams',
+    teamsDesc: 'Information about participating teams.',
+    login: 'Login',
+    register: 'Register',
+    profile: 'Profile',
+    settings: 'Settings',
+    logout: 'Logout',
+    username: 'Username',
+    password: 'Password',
+  },
+  // ... các ngôn ngữ khác nếu có
+};
+
 // Dark/Light mode toggle
 const modeToggle = document.getElementById('modeToggle');
 const body = document.body;
@@ -89,159 +111,118 @@ modal.addEventListener('click', (e) => {
   if (e.target === modal) closeModal();
 });
 
-// Đa ngôn ngữ
-const translations = {
-  en: {
-    rules: 'Rules',
-    rulesDesc: 'CTF rules, regulations and instructions...',
-    challenges: 'Challenges',
-    challengesDesc: 'Challenge list will be displayed here.',
-    scoreboard: 'Scoreboard',
-    scoreboardDesc: 'Ranking board for teams/players.',
-    teams: 'Teams',
-    teamsDesc: 'Information about participating teams.',
-    login: 'Login',
-    register: 'Register',
-    profile: 'Profile',
-    settings: 'Settings',
-    logout: 'Logout',
-    username: 'Username',
-    password: 'Password',
-  },
-  vi: {
-    rules: 'Luật chơi',
-    rulesDesc: 'Luật chơi CTF, quy định và hướng dẫn...',
-    challenges: 'Thử thách',
-    challengesDesc: 'Danh sách thử thách sẽ hiển thị ở đây.',
-    scoreboard: 'Bảng xếp hạng',
-    scoreboardDesc: 'Bảng xếp hạng các đội/thi sinh.',
-    teams: 'Đội',
-    teamsDesc: 'Thông tin các đội tham gia.',
-    login: 'Đăng nhập',
-    register: 'Đăng ký',
-    profile: 'Cá nhân',
-    settings: 'Cài đặt',
-    logout: 'Đăng xuất',
-    username: 'Tên đăng nhập',
-    password: 'Mật khẩu',
-  },
-  fr: {
-    rules: 'Règles',
-    rulesDesc: 'Règles CTF, règlements et instructions...',
-    challenges: 'Défis',
-    challengesDesc: 'La liste des défis sera affichée ici.',
-    scoreboard: 'Classement',
-    scoreboardDesc: 'Tableau de classement des équipes/joueurs.',
-    teams: 'Équipes',
-    teamsDesc: 'Informations sur les équipes participantes.',
-    login: 'Connexion',
-    register: 'Inscription',
-    profile: 'Profil',
-    settings: 'Paramètres',
-    logout: 'Déconnexion',
-    username: "Nom d'utilisateur",
-    password: 'Mot de passe',
-  },
-  ja: {
-    rules: 'ルール',
-    rulesDesc: 'CTFのルール、規則、説明...',
-    challenges: 'チャレンジ',
-    challengesDesc: 'チャレンジリストがここに表示されます。',
-    scoreboard: 'スコアボード',
-    scoreboardDesc: 'チーム/プレイヤーのランキングボード。',
-    teams: 'チーム',
-    teamsDesc: '参加チームの情報。',
-    login: 'ログイン',
-    register: '登録',
-    profile: 'プロフィール',
-    settings: '設定',
-    logout: 'ログアウト',
-    username: 'ユーザー名',
-    password: 'パスワード',
-  },
-  zh: {
-    rules: '规则',
-    rulesDesc: 'CTF规则、规定和说明...',
-    challenges: '挑战',
-    challengesDesc: '挑战列表将在此显示。',
-    scoreboard: '排行榜',
-    scoreboardDesc: '团队/选手排行榜。',
-    teams: '队伍',
-    teamsDesc: '参赛队伍信息。',
-    login: '登录',
-    register: '注册',
-    profile: '个人',
-    settings: '设置',
-    logout: '登出',
-    username: '用户名',
-    password: '密码',
-  },
-};
+// Navigation active state
+function setActiveNavItem(clickedLink) {
+  // Remove active class from all nav links
+  document.querySelectorAll('.nav-links a').forEach(link => {
+    link.classList.remove('active');
+  });
+  
+  // Add active class to clicked link
+  clickedLink.classList.add('active');
+}
+
+// Add click event listeners to nav links
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', function(e) {
+    setActiveNavItem(this);
+  });
+});
 
 function setLang(lang) {
   const t = translations[lang] || translations['en'];
   // Navbar
-  document.querySelector('a[href="#rules"]').textContent = t.rules;
-  document.querySelector('a[href="#challenges"]').textContent = t.challenges;
-  document.querySelector('a[href="#scoreboard"]').textContent = t.scoreboard;
-  document.querySelector('a[href="#teams"]').textContent = t.teams;
-  document.getElementById('loginBtn').querySelector('a').textContent = t.login;
-  document.getElementById('registerBtn').querySelector('a').textContent = t.register;
-  document.getElementById('profileBtn').querySelector('a').textContent = t.profile;
-  document.getElementById('settingBtn').querySelector('a').textContent = t.settings;
-  document.getElementById('logoutBtn').querySelector('a').textContent = t.logout;
+  const rulesLink = document.querySelector('a[href="#rules"]');
+  if (rulesLink) rulesLink.textContent = t.rules;
+  const challengesLink = document.querySelector('a[href="challenges.html"]');
+  if (challengesLink) challengesLink.textContent = t.challenges;
+  const scoreboardLink = document.querySelector('a[href="#scoreboard"]');
+  if (scoreboardLink) scoreboardLink.textContent = t.scoreboard;
+  const teamsLink = document.querySelector('a[href="#teams"]');
+  if (teamsLink) teamsLink.textContent = t.teams;
+  const loginBtn = document.getElementById('loginBtn');
+  if (loginBtn) loginBtn.querySelector('a').textContent = t.login;
+  const registerBtn = document.getElementById('registerBtn');
+  if (registerBtn) registerBtn.querySelector('a').textContent = t.register;
+  const profileBtn = document.getElementById('profileBtn');
+  if (profileBtn) profileBtn.querySelector('a').textContent = t.profile;
+  const settingBtn = document.getElementById('settingBtn');
+  if (settingBtn) settingBtn.querySelector('a').textContent = t.settings;
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) logoutBtn.querySelector('a').textContent = t.logout;
   // Section titles & desc
-  document.getElementById('rules-title').textContent = t.rules;
-  document.getElementById('rules-desc').textContent = t.rulesDesc;
-  document.getElementById('challenges-title').textContent = t.challenges;
-  document.getElementById('challenges-desc').textContent = t.challengesDesc;
-  document.getElementById('scoreboard-title').textContent = t.scoreboard;
-  document.getElementById('scoreboard-desc').textContent = t.scoreboardDesc;
-  document.getElementById('teams-title').textContent = t.teams;
-  document.getElementById('teams-desc').textContent = t.teamsDesc;
+  const rulesTitle = document.getElementById('rules-title');
+  if (rulesTitle) rulesTitle.textContent = t.rules;
+  const rulesDesc = document.getElementById('rules-desc');
+  if (rulesDesc) rulesDesc.textContent = t.rulesDesc;
+  const challengesTitle = document.getElementById('challenges-title');
+  if (challengesTitle) challengesTitle.textContent = t.challenges;
+  const challengesDesc = document.getElementById('challenges-desc');
+  if (challengesDesc) challengesDesc.textContent = t.challengesDesc;
+  const scoreboardTitle = document.getElementById('scoreboard-title');
+  if (scoreboardTitle) scoreboardTitle.textContent = t.scoreboard;
+  const scoreboardDesc = document.getElementById('scoreboard-desc');
+  if (scoreboardDesc) scoreboardDesc.textContent = t.scoreboardDesc;
+  const teamsTitle = document.getElementById('teams-title');
+  if (teamsTitle) teamsTitle.textContent = t.teams;
+  const teamsDesc = document.getElementById('teams-desc');
+  if (teamsDesc) teamsDesc.textContent = t.teamsDesc;
   // Modal
-  document.getElementById('login-title').textContent = t.login;
-  document.getElementById('login-username').placeholder = t.username;
-  document.getElementById('login-password').placeholder = t.password;
-  document.getElementById('login-btn').textContent = t.login;
-  document.getElementById('register-title').textContent = t.register;
-  document.getElementById('register-username').placeholder = t.username;
-  document.getElementById('register-password').placeholder = t.password;
-  document.getElementById('register-btn').textContent = t.register;
+  const loginTitle = document.getElementById('login-title');
+  if (loginTitle) loginTitle.textContent = t.login;
+  const loginUsername = document.getElementById('login-username');
+  if (loginUsername) loginUsername.placeholder = t.username;
+  const loginPassword = document.getElementById('login-password');
+  if (loginPassword) loginPassword.placeholder = t.password;
+  const loginBtn2 = document.getElementById('login-btn');
+  if (loginBtn2) loginBtn2.textContent = t.login;
+  const registerTitle = document.getElementById('register-title');
+  if (registerTitle) registerTitle.textContent = t.register;
+  const registerUsername = document.getElementById('register-username');
+  if (registerUsername) registerUsername.placeholder = t.username;
+  const registerPassword = document.getElementById('register-password');
+  if (registerPassword) registerPassword.placeholder = t.password;
+  const registerBtn2 = document.getElementById('register-btn');
+  if (registerBtn2) registerBtn2.textContent = t.register;
 }
 
 const langSelect = document.getElementById('langSelect');
 const savedLang = localStorage.getItem('lang') || 'en';
-langSelect.value = savedLang;
 setLang(savedLang);
-
-langSelect.addEventListener('change', function() {
-  setLang(this.value);
-  localStorage.setItem('lang', this.value);
-});
+if (langSelect) {
+  langSelect.value = savedLang;
+  langSelect.addEventListener('change', function() {
+    setLang(this.value);
+    localStorage.setItem('lang', this.value);
+  });
+}
 
 // Google Translate Widget toggle (an toàn hơn)
 const langToggle = document.getElementById('langToggle');
 const langWidget = document.getElementById('google_translate_element');
 
-langToggle.addEventListener('click', function(e) {
-  e.stopPropagation();
-  // Nếu widget chưa có nội dung, thử khởi tạo lại
-  if (!langWidget.innerHTML.trim()) {
-    if (typeof google !== 'undefined' && google.translate && google.translate.TranslateElement) {
-      new google.translate.TranslateElement({
-        pageLanguage: 'en',
-        includedLanguages: 'en,vi,fr,ja,zh,ko,ru,es,de,th,pt,it',
-        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-      }, 'google_translate_element');
+if (langToggle && langWidget) {
+  langToggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    // Nếu widget chưa có nội dung, thử khởi tạo lại
+    if (!langWidget.innerHTML.trim()) {
+      if (typeof google !== 'undefined' && google.translate && google.translate.TranslateElement) {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,vi,fr,ja,zh,ko,ru,es,de,th,pt,it',
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+        }, 'google_translate_element');
+      }
     }
-  }
-  langWidget.classList.toggle('lang-widget-shown');
-  langWidget.classList.toggle('lang-widget-hidden');
-});
-document.addEventListener('click', function(e) {
-  if (!langWidget.contains(e.target) && e.target !== langToggle) {
-    langWidget.classList.add('lang-widget-hidden');
-    langWidget.classList.remove('lang-widget-shown');
-  }
-}); 
+    langWidget.classList.toggle('lang-widget-shown');
+    langWidget.classList.toggle('lang-widget-hidden');
+  });
+  document.addEventListener('click', function(e) {
+    if (!langWidget.contains(e.target) && e.target !== langToggle) {
+      langWidget.classList.add('lang-widget-hidden');
+      langWidget.classList.remove('lang-widget-shown');
+    }
+  });
+}
+
+ 
